@@ -18,6 +18,11 @@ public:
 	void outputEnemyBoard();
 
 	void setIsOccupied(int y, int x, int next, bool isVertical);
+	bool checkAvailability(int x, int y, bool isVertical, int next);
+	void findAvailablePlacement(int& x, int& y, bool& isVertical, int next);
+	void placeShip(int x, int y, int next, bool isVertical);
+	void clearShip(int x, int y, int next, bool isVertical);
+	bool checkCollision(int x, int y, int next, bool isVertical);
 	//void displayDeploymentValues();
 	void deployShips();
 
@@ -28,5 +33,7 @@ public:
 	void rotation(int x, int y, int next, bool& isVertical);
 
 	void printB();
+
+	void printOccupiedCells();
 };
 

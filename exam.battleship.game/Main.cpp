@@ -24,6 +24,8 @@ void main()
 
 	b.deployShips();
 
+	//b.printOccupiedCells();
+
 	//b.printB();
 
 	//test t;

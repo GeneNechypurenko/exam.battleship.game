@@ -121,6 +121,30 @@ void Board::setIsOccupied(int y, int x, int next, bool isVertical)
 			for (int i = 0; i < ships[next].getDecks(); i++)
 			{
 				isOccupied[y + i][x] = true;
+
+				if (y + i - 1 >= 0)
+				{
+					isOccupied[y + i - 1][x] = true;
+					if (x - 1 >= 0)
+						isOccupied[y + i - 1][x - 1] = true;
+					if (x + 1 < BOARDSIZE)
+						isOccupied[y + i - 1][x + 1] = true;
+				}
+
+				if (y + i + 1 < BOARDSIZE)
+				{
+					isOccupied[y + i + 1][x] = true;
+					if (x - 1 >= 0)
+						isOccupied[y + i + 1][x - 1] = true;
+					if (x + 1 < BOARDSIZE)
+						isOccupied[y + i + 1][x + 1] = true;
+				}
+
+				if (x - 1 >= 0)
+					isOccupied[y + i][x - 1] = true;
+
+				if (x + 1 < BOARDSIZE)
+					isOccupied[y + i][x + 1] = true;
 			}
 		}
 		else
@@ -128,9 +152,147 @@ void Board::setIsOccupied(int y, int x, int next, bool isVertical)
 			for (int i = 0; i < ships[next].getDecks(); i++)
 			{
 				isOccupied[y][x + i] = true;
+
+				if (y - 1 >= 0)
+				{
+					isOccupied[y - 1][x + i] = true;
+					if (x - 1 >= 0)
+						isOccupied[y - 1][x + i - 1] = true;
+					if (x + i + 1 < BOARDSIZE)
+						isOccupied[y - 1][x + i + 1] = true;
+				}
+
+				if (y + 1 < BOARDSIZE)
+				{
+					isOccupied[y + 1][x + i] = true;
+					if (x - 1 >= 0)
+						isOccupied[y + 1][x + i - 1] = true;
+					if (x + i + 1 < BOARDSIZE)
+						isOccupied[y + 1][x + i + 1] = true;
+				}
+
+				if (x + i - 1 >= 0)
+					isOccupied[y][x + i - 1] = true;
+
+				if (x + i + 1 < BOARDSIZE)
+					isOccupied[y][x + i + 1] = true;
 			}
 		}
 	}
+}
+
+bool Board::checkAvailability(int x, int y, bool isVertical, int next)
+{
+    if (isVertical)
+	{
+        if (y + ships[next].getDecks() > BOARDSIZE)
+		{
+            return false;
+        }
+        for (int i = 0; i < ships[next].getDecks(); i++)
+		{
+            if (isOccupied[y + i][x])
+			{
+                return false;
+            }
+        }
+    }
+    else 
+	{
+        if (x + ships[next].getDecks() > BOARDSIZE)
+		{
+            return false;
+        }
+        for (int i = 0; i < ships[next].getDecks(); i++) 
+		{
+            if (isOccupied[y][x + i])
+			{
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+void Board::findAvailablePlacement(int& x, int& y, bool& isVertical, int next)
+{
+    for (int i = 0; i < BOARDSIZE; i++)
+	{
+        for (int j = 0; j < BOARDSIZE; j++)
+		{
+            for (int k = 0; k < 2; k++)
+			{ 
+                if (checkAvailability(j, i, k, next))
+				{
+                    x = j;
+                    y = i;
+                    isVertical = (k == 1);
+                    return;
+                }
+            }
+        }
+    }
+}
+
+void Board::placeShip(int x, int y, int next, bool isVertical)
+{
+    if (isVertical)
+    {
+        for (int i = 0; i < ships[next].getDecks(); i++)
+        {
+            gameBoard[y + i][x] = DECKSAFE;
+        }
+    }
+    else
+    {
+        for (int i = 0; i < ships[next].getDecks(); i++)
+        {
+            gameBoard[y][x + i] = DECKSAFE;
+        }
+    }
+}
+
+void Board::clearShip(int x, int y, int next, bool isVertical)
+{
+    if (isVertical)
+    {
+        for (int i = 0; i < ships[next].getDecks(); i++)
+        {
+            gameBoard[y + i][x] = WATER;
+        }
+    }
+    else
+    {
+        for (int i = 0; i < ships[next].getDecks(); i++)
+        {
+            gameBoard[y][x + i] = WATER;
+        }
+    }
+}
+
+bool Board::checkCollision(int x, int y, int next, bool isVertical)
+{
+    if (isVertical)
+    {
+        for (int i = 0; i < ships[next].getDecks(); i++)
+        {
+            if (isOccupied[y + i][x])
+            {
+                return true;
+            }
+        }
+    }
+    else
+    {
+        for (int i = 0; i < ships[next].getDecks(); i++)
+        {
+            if (isOccupied[y][x + i])
+            {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 
@@ -149,19 +311,12 @@ void Board::deployShips()
 	{
 		ships[next].setShipPlacement(x, y, isVertical);
 
-		for (int i = 0; i < ships[next].getDecks(); i++)
+		if (isOccupied[y][x] == true)
 		{
-			if (isVertical)
-			{
-				gameBoard[y + i][x] = DECKSAFE;
-				//isOccupied[y + i][x] = true;
-			}
-			else
-			{
-				gameBoard[y][x + i] = DECKSAFE;
-				//isOccupied[y][x + i] = true;
-			}
+			findAvailablePlacement(x, y, isVertical, next);
 		}
+
+		placeShip(x, y, next, isVertical);
 
 		outputPlayerBoard();
 
@@ -239,6 +394,12 @@ void Board::moveUp(int x, int& y, int next, bool isVertical)
 				gameBoard[0][x + i] = WATER;
 			}
 		}
+		else if (isOccupied[y][x + ships[next].getDecks() - 1])
+		{
+			clearShip(x, y + 1, next, isVertical);
+			findAvailablePlacement(x, y, isVertical, next);
+			return;
+		}
 		else
 		{
 			for (int i = 0; i < ships[next].getDecks(); i++)
@@ -251,7 +412,6 @@ void Board::moveUp(int x, int& y, int next, bool isVertical)
 
 void Board::moveDown(int x, int& y, int next, bool isVertical)
 {
-
 	if (isVertical)
 	{
 		if (y + ships[next].getDecks() - 1 == BOARDSIZE)
@@ -261,6 +421,12 @@ void Board::moveDown(int x, int& y, int next, bool isVertical)
 				gameBoard[y + i - 1][x] = WATER;
 			}
 			y = 0;
+		}
+		else if (isOccupied[y + ships[next].getDecks() - 1][x])
+		{
+			clearShip(x, y - 1, next, isVertical);
+			findAvailablePlacement(x, y, isVertical, next);
+			return;
 		}
 		else
 		{
@@ -276,6 +442,12 @@ void Board::moveDown(int x, int& y, int next, bool isVertical)
 				gameBoard[BOARDSIZE - 1][x + i] = WATER;
 			}
 			y = 0;
+		}
+		else if (isOccupied[y][x + ships[next].getDecks() - 1])
+		{
+			clearShip(x, y - 1, next, isVertical);
+			findAvailablePlacement(x, y, isVertical, next);
+			return;
 		}
 		else
 		{
@@ -299,6 +471,12 @@ void Board::moveLeft(int& x, int y, int next, bool isVertical)
 			{
 				gameBoard[y + i][0] = WATER;
 			}
+		}
+		else if (isOccupied[y + ships[next].getDecks() - 1][x])
+		{
+			clearShip(x + 1, y, next, isVertical);
+			findAvailablePlacement(x, y, isVertical, next);
+			return;
 		}
 		else
 		{
@@ -342,6 +520,12 @@ void Board::moveRight(int& x, int y, int next, bool isVertical)
 				gameBoard[y + i][BOARDSIZE - 1] = WATER;
 			}
 		}
+		else if (isOccupied[y + ships[next].getDecks() - 1][x])
+		{
+			clearShip(x - 1, y, next, isVertical);
+			findAvailablePlacement(x, y, isVertical, next);
+			return;
+		}
 		else
 		{
 			for (int i = 0; i < ships[next].getDecks(); i++)
@@ -360,6 +544,12 @@ void Board::moveRight(int& x, int y, int next, bool isVertical)
 			{
 				gameBoard[y][BOARDSIZE - ships[next].getDecks() + i] = WATER;
 			}
+		}
+		else if (isOccupied[y][x + ships[next].getDecks() - 1])
+		{
+			clearShip(x + 1, y, next, isVertical);
+			findAvailablePlacement(x, y, isVertical, next);
+			return;
 		}
 		else
 		{
@@ -410,4 +600,18 @@ void Board::printB()
 {
 	for (int i = 0; i < SHIPCOUNT; i++)
 		ships[i].print();
+}
+
+void Board::printOccupiedCells()
+{
+	for (int y = 0; y < BOARDSIZE; y++)
+	{
+		for (int x = 0; x < BOARDSIZE; x++)
+		{
+			if (isOccupied[y][x])
+			{
+				cout << "Occupied cell at (" << y << ", " << x << ")" << endl;
+			}
+		}
+	}
 }
